@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/jumayevgadam/book_management/internals/author/routes"
@@ -23,5 +25,7 @@ func main() {
 	api := app.Group("/api")
 
 	routes.InitAuthorRoutes(api, DB)
+
+	app.Run(os.Getenv("PORT_SERVER"))
 
 }
