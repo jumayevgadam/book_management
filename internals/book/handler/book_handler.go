@@ -57,7 +57,22 @@ func (h *BookHandler) CreateBook(c *gin.Context) {
 }
 
 func (h *BookHandler) GetBookByID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid author id"})
+		return
+	}
 
+	data, err := h.service.GetBookByID(c, id)
+	if err != nil {
+		logrus.Errorf("failed to get book: %v", err.Error())
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"data": data,
+	})
 }
 
 func (h *BookHandler) GetAllBooks(c *gin.Context) {

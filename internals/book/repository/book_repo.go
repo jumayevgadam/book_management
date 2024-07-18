@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/book/models"
+	"github.com/sirupsen/logrus"
 )
 
 type BookRepository struct {
@@ -45,7 +47,19 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*mo
 }
 
 func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.Book, error) {
-	return nil, nil
+	var Book models.Book
+	query := `SELECT
+					id, title, author_id, year, genre
+					FROM books
+					WHERE id = $1`
+
+	err := pgxscan.Get(ctx, r.DB, &Book, query, book_id)
+	if err != nil {
+		logrus.Errorf("error in fetching one book: %v", err.Error())
+		return nil, err
+	}
+
+	return &Book, nil
 }
 
 func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.Book, error) {

@@ -10,7 +10,7 @@ import (
 type AuthorDTO interface {
 	CreateAuthor(ctx context.Context, author *models.Author) (*models.Author, error)
 	GetAuthorByID(ctx context.Context, author_id int) (*models.Author, error)
-	GetAllAuthor(ctx context.Context) ([]*models.Author, error)
+	GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.Author, error)
 	UpdateAuthor(ctx context.Context, author_id int, update *models.UpdateInputAuthor) (string, error)
 	DeleteAuthor(ctx context.Context, author_id int) (string, error)
 }

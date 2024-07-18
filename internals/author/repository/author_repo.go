@@ -50,8 +50,11 @@ func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*m
 	return &OneAuthor, nil
 }
 
-func (r *AuthorRepository) GetAllAuthor(ctx context.Context) ([]*models.Author, error) {
+func (r *AuthorRepository) GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.Author, error) {
 	var Authors []*models.Author
+
+	// we will implement here filtering about name
+	// it is useful for finding authors for finding books
 
 	query := `SELECT 
 					id, name, biography, birthdate 

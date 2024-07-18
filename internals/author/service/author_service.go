@@ -23,8 +23,8 @@ func (s *AuthorService) GetAuthorByID(ctx context.Context, author_id int) (*mode
 	return s.repo.GetAuthorByID(ctx, author_id)
 }
 
-func (s *AuthorService) GetAllAuthor(ctx context.Context) ([]*models.Author, error) {
-	return s.repo.GetAllAuthor(ctx)
+func (s *AuthorService) GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.Author, error) {
+	return s.repo.GetAllAuthor(ctx, pagination)
 }
 
 func (s *AuthorService) UpdateAuthor(ctx context.Context, id int, updateInput *models.UpdateInputAuthor) (string, error) {

@@ -16,6 +16,7 @@ type UpdateInputAuthor struct {
 }
 
 type PaginationForAuthor struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit    int    `json:"limit" form:"limit" binding:"required"`
+	Offset   int    `json:"offset" form:"offset" binding:"required"`
+	Criteria string `json:"criteria" form:"criteria"`
 }

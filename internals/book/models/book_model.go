@@ -15,6 +15,6 @@ type UpdateInputBook struct {
 }
 
 type PaginationForBook struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
+	Limit  int `json:"limit" binding:"required"`
+	Offset int `json:"offset" binding:"required"`
 }

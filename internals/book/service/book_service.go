@@ -20,7 +20,7 @@ func (s *BookService) CreateBook(ctx context.Context, book *models.Book) (*model
 }
 
 func (s *BookService) GetBookByID(ctx context.Context, book_id int) (*models.Book, error) {
-	return nil, nil
+	return s.repo.GetBookByID(ctx, book_id)
 }
 
 func (s *BookService) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.Book, error) {

@@ -14,12 +14,12 @@ func InitBookRoutes(router *gin.RouterGroup, DB *pgxpool.Pool) {
 	BookServices := service.NewDTOService(BookRepos)
 	BookHandlers := handler.NewDTOHandler(BookServices)
 
-	BookRoutes := router.Group("/book")
+	BookRoutes := router.Group("/books")
 	{
-		BookRoutes.POST("/create", BookHandlers.CreateBook)
-		BookRoutes.GET("/get/:id", BookHandlers.GetBookByID)
-		BookRoutes.GET("/get/all", BookHandlers.GetAllBooks)
-		BookRoutes.PUT("/update/:id", BookHandlers.UpdateBook)
-		BookRoutes.DELETE("/delete/:id", BookHandlers.DeleteBook)
+		BookRoutes.POST("", BookHandlers.CreateBook)
+		BookRoutes.GET("", BookHandlers.GetAllBooks)
+		BookRoutes.GET("/:id", BookHandlers.GetBookByID)
+		BookRoutes.PUT("/:id", BookHandlers.UpdateBook)
+		BookRoutes.DELETE("/:id", BookHandlers.DeleteBook)
 	}
 }

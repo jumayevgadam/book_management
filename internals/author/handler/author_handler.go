@@ -71,7 +71,14 @@ func (h *AuthorHandler) GetAuthorByID(c *gin.Context) {
 }
 
 func (h *AuthorHandler) GetAllAuthors(c *gin.Context) {
-	authors, err := h.service.GetAllAuthor(c)
+	var pagination models.PaginationForAuthor
+
+	if err := c.ShouldBindQuery(&pagination); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pagination parameters"})
+		return
+	}
+
+	authors, err := h.service.GetAllAuthor(c, pagination)
 	if err != nil {
 		logrus.Errorf("error occured in fetching all authors: %v", err.Error())
 		c.JSON(500, gin.H{"error": err.Error()})

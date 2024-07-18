@@ -13,12 +13,12 @@ func InitAuthorRoutes(router *gin.RouterGroup, DB *pgxpool.Pool) {
 	AuthorServices := service.NewDTOService(AuthorRepos)
 	AuthorHandlers := handler.NewDTOHandler(AuthorServices)
 
-	AuthorRoutes := router.Group("/author")
+	AuthorRoutes := router.Group("/authors")
 	{
-		AuthorRoutes.POST("/create", AuthorHandlers.CreateAuthor)
-		AuthorRoutes.GET("/get/:id", AuthorHandlers.GetAuthorByID)
-		AuthorRoutes.GET("/get/all", AuthorHandlers.GetAllAuthors)
-		AuthorRoutes.PUT("/update/:id", AuthorHandlers.UpdateAuthor)
-		AuthorRoutes.DELETE("/delete/:id", AuthorHandlers.DeleteAuthor)
+		AuthorRoutes.POST("", AuthorHandlers.CreateAuthor)
+		AuthorRoutes.GET("", AuthorHandlers.GetAllAuthors)
+		AuthorRoutes.GET("/:id", AuthorHandlers.GetAuthorByID)
+		AuthorRoutes.PUT("/:id", AuthorHandlers.UpdateAuthor)
+		AuthorRoutes.DELETE("/:id", AuthorHandlers.DeleteAuthor)
 	}
 }
