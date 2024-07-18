@@ -20,7 +20,10 @@ func NewAuthorRepository(DB *pgxpool.Pool) *AuthorRepository {
 }
 
 func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Author) (*models.Author, error) {
-	query := `INSERT INTO authors (name, biography, birthdate) VALUES ($1, $2, $3) RETURNING id`
+	query := `INSERT INTO authors (
+					name, biography, birthdate) 
+					VALUES ($1, $2, $3) 
+					RETURNING id`
 
 	err := r.DB.QueryRow(ctx, query, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
 	if err != nil {
@@ -34,7 +37,10 @@ func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Auth
 func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*models.Author, error) {
 	var OneAuthor models.Author
 
-	query := `SELECT id, name, biography, birthdate FROM authors WHERE id = $1`
+	query := `SELECT 
+					id, name, biography, birthdate 
+					FROM authors 
+					WHERE id = $1`
 	err := pgxscan.Get(ctx, r.DB, &OneAuthor, query, author_id)
 	if err != nil {
 		logrus.Errorf("error in fetching one author: %v", err.Error())
@@ -47,7 +53,9 @@ func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*m
 func (r *AuthorRepository) GetAllAuthor(ctx context.Context) ([]*models.Author, error) {
 	var Authors []*models.Author
 
-	query := `SELECT id, name, biography, birthdate FROM authors`
+	query := `SELECT 
+					id, name, biography, birthdate 
+					FROM authors`
 	err := pgxscan.Select(ctx, r.DB, &Authors, query)
 	if err != nil {
 		logrus.Errorf("error in fetching all authors: %v", err.Error())
@@ -99,7 +107,9 @@ func (r *AuthorRepository) UpdateAuthor(ctx context.Context, author_id int, upda
 }
 
 func (r *AuthorRepository) DeleteAuthor(ctx context.Context, author_id int) (string, error) {
-	query := "DELETE FROM authors WHERE id = $1 RETURNING 'Author deleted'"
+	query := `DELETE FROM authors 
+					WHERE id = $1 
+					RETURNING 'Author deleted'`
 	var response string
 
 	err := r.DB.QueryRow(ctx, query, author_id).Scan(&response)

@@ -6,8 +6,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jumayevgadam/book_management/internals/author/models"
+	"github.com/jumayevgadam/book_management/internals/author/service"
 	"github.com/sirupsen/logrus"
 )
+
+type AuthorHandler struct {
+	service *service.Service
+}
+
+func NewDTOHandler(service *service.Service) *AuthorHandler {
+	return &AuthorHandler{service: service}
+}
 
 func (h *AuthorHandler) CreateAuthor(c *gin.Context) {
 	var Author models.Author

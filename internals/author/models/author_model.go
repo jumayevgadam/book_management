@@ -14,3 +14,8 @@ type UpdateInputAuthor struct {
 	Biography *string    `json:"biography"`
 	Birthdate *time.Time `json:"birthdate"`
 }
+
+type PaginationForAuthor struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}

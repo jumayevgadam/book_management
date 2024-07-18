@@ -1,10 +1,10 @@
-package repository
+package service
 
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/book/models"
+	"github.com/jumayevgadam/book_management/internals/book/repository"
 )
 
 type BookDTO interface {
@@ -15,12 +15,12 @@ type BookDTO interface {
 	DeleteBook(ctx context.Context, book_id int) (string, error)
 }
 
-type Repository struct {
+type Service struct {
 	BookDTO
 }
 
-func NewDTORepository(DB *pgxpool.Pool) *Repository {
-	return &Repository{
-		BookDTO: NewBookRepository(DB),
+func NewDTOService(repo *repository.Repository) *Service {
+	return &Service{
+		BookDTO: NewBookService(&repo.BookDTO),
 	}
 }

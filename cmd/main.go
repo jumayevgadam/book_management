@@ -6,7 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/jumayevgadam/book_management/internals/author/routes"
+	routes2 "github.com/jumayevgadam/book_management/internals/book/routes"
 	"github.com/jumayevgadam/book_management/pkg/dbconn"
+	"github.com/jumayevgadam/book_management/pkg/server"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,11 +23,14 @@ func main() {
 	}
 
 	app := gin.Default()
-
 	api := app.Group("/api")
 
 	routes.InitAuthorRoutes(api, DB)
+	routes2.InitBookRoutes(api, DB)
 
-	app.Run(":" + os.Getenv("PORT_SERVER"))
-
+	// Call server
+	srv := &server.Server{}
+	if err := srv.Run(os.Getenv("PORT_SERVER"), app); err != nil {
+		logrus.Fatalf("failed to run server: %v", err.Error())
+	}
 }
