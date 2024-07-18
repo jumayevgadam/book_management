@@ -26,6 +26,6 @@ func main() {
 
 	routes.InitAuthorRoutes(api, DB)
 
-	app.Run(os.Getenv("PORT_SERVER"))
+	app.Run(":" + os.Getenv("PORT_SERVER"))
 
 }
