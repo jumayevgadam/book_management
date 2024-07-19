@@ -53,13 +53,24 @@ func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*m
 func (r *AuthorRepository) GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.Author, error) {
 	var Authors []*models.Author
 
-	// we will implement here filtering about name
-	// it is useful for finding authors for finding books
+	// Base query
+	query := `SELECT * FROM authors`
 
-	query := `SELECT 
-					id, name, biography, birthdate 
-					FROM authors`
-	err := pgxscan.Select(ctx, r.DB, &Authors, query)
+	var args []interface{}
+	argId := 1
+
+	if pagination.Criteria != "" {
+		query += fmt.Sprintf(` WHERE name ILIKE 
+										$%d`, argId)
+		args = append(args, "%%"+pagination.Criteria+"%%")
+		argId++
+	}
+
+	query += fmt.Sprintf(` LIMIT $%d OFFSET $%d`,
+		argId, argId+1)
+	args = append(args, pagination.Limit, pagination.Offset)
+
+	err := pgxscan.Select(ctx, r.DB, &Authors, query, args...)
 	if err != nil {
 		logrus.Errorf("error in fetching all authors: %v", err.Error())
 		return nil, err
@@ -95,7 +106,10 @@ func (r *AuthorRepository) UpdateAuthor(ctx context.Context, author_id int, upda
 		return "", fmt.Errorf("no fields for update")
 	}
 
-	query := fmt.Sprintf("UPDATE authors SET %s WHERE id = $%d RETURNING 'Author information updated'", strings.Join(setValues, ", "), argId)
+	query := fmt.Sprintf(`UPDATE authors SET 
+									%s WHERE id = $%d 
+									RETURNING 'Author information updated'`,
+		strings.Join(setValues, ", "), argId)
 	args = append(args, author_id)
 
 	var response string

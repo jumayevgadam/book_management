@@ -24,13 +24,13 @@ func (s *BookService) GetBookByID(ctx context.Context, book_id int) (*models.Boo
 }
 
 func (s *BookService) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.Book, error) {
-	return nil, nil
+	return s.repo.GetAllBooks(ctx, pagination)
 }
 
 func (s *BookService) UpdateBook(ctx context.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
-	return "", nil
+	return s.repo.UpdateBook(ctx, book_id, updateInput)
 }
 
 func (s *BookService) DeleteBook(ctx context.Context, book_id int) (string, error) {
-	return "", nil
+	return s.repo.DeleteBook(ctx, book_id)
 }

@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,6 +33,10 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*mo
 
 	if !exists {
 		return nil, fmt.Errorf("author with id %d does not exist", book.Author_ID)
+	}
+
+	if book.Year > time.Now().Year() {
+		return nil, fmt.Errorf("invalid year %d", book.Year)
 	}
 
 	query2 := `INSERT INTO books(
@@ -62,14 +68,112 @@ func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.
 	return &Book, nil
 }
 
+// Author can be search books about with title or published year
+// Paginnation also need; generally filter need::
 func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.Book, error) {
-	return nil, nil
+	var Books []*models.Book
+
+	// Base query
+	query := `SELECT * FROM books`
+
+	var args []interface{}
+	argId := 1
+	conditions := []string{}
+
+	if pagination.Title != "" {
+		conditions = append(conditions, fmt.Sprintf("title ILIKE $%d", argId))
+		args = append(args, fmt.Sprintf("%%%s%%", pagination.Title))
+		argId++
+	}
+
+	if pagination.Year != 0 {
+		conditions = append(conditions, fmt.Sprintf("year = $%d", argId))
+		args = append(args, pagination.Year)
+		argId++
+	}
+
+	if pagination.Genre != "" {
+		conditions = append(conditions, fmt.Sprintf("genre ILIKE $%d", argId))
+		args = append(args, fmt.Sprintf("%%%s%%", pagination.Genre))
+		argId++
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + fmt.Sprintf(" %s", conditions[0])
+		for i := 1; i < len(conditions); i++ {
+			query += " AND " + conditions[i]
+		}
+	}
+
+	query += fmt.Sprintf(` LIMIT $%d OFFSET $%d`,
+		argId, argId+1)
+	args = append(args, pagination.Limit, pagination.Offset)
+
+	err := pgxscan.Select(ctx, r.DB, &Books, query, args...)
+	if err != nil {
+		logrus.Errorf("error in fetching all books: %v", err.Error())
+		return nil, err
+	}
+
+	return Books, nil
 }
 
 func (r *BookRepository) UpdateBook(ctx context.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
-	return "", nil
+	setValues := make([]string, 0)
+	args := make([]interface{}, 0)
+	argId := 1
+
+	if updateInput.Title != nil {
+		setValues = append(setValues, fmt.Sprintf("title = $%d", argId))
+		args = append(args, *updateInput.Title)
+		argId++
+	}
+
+	if updateInput.Year != nil {
+		setValues = append(setValues, fmt.Sprintf("year = $%d", argId))
+		args = append(args, *updateInput.Year)
+		argId++
+	}
+
+	if updateInput.Genre != nil {
+		setValues = append(setValues, fmt.Sprintf("genre = $%d", argId))
+		args = append(args, *updateInput.Genre)
+		argId++
+	}
+
+	if len(setValues) == 0 {
+		return "", fmt.Errorf("no fields for update")
+	}
+
+	query := fmt.Sprintf(`UPDATE books SET
+								%s WHERE id = $%d
+								RETURNING 'Book informations updated'
+								`, strings.Join(setValues, ", "), argId)
+	args = append(args, book_id)
+
+	var response string
+	_, err := r.DB.Exec(ctx, query, args...)
+	if err != nil {
+		logrus.Errorf("error in updating book: %v", err.Error())
+		return response, err
+	}
+
+	response = fmt.Sprintf("Book with ID %d updated successfully", book_id)
+	return response, nil
 }
 
 func (r *BookRepository) DeleteBook(ctx context.Context, book_id int) (string, error) {
-	return "", nil
+	query := `DELETE FROM books 
+               WHERE id = $1 
+               RETURNING 'Book deleted'`
+	var response string
+
+	err := r.DB.QueryRow(ctx, query, book_id).Scan(&response)
+	if err != nil {
+		logrus.Errorf("error in deleting book: %v", err.Error())
+		return response, err
+	}
+
+	response = fmt.Sprintf("Book with ID %d deleted successfully", book_id)
+	return response, nil
 }

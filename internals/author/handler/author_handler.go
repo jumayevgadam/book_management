@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jumayevgadam/book_management/internals/author/models"
 	"github.com/jumayevgadam/book_management/internals/author/service"
-	"github.com/sirupsen/logrus"
+	response "github.com/jumayevgadam/book_management/pkg/customerr"
 )
 
 type AuthorHandler struct {
@@ -23,7 +23,7 @@ func (h *AuthorHandler) CreateAuthor(c *gin.Context) {
 
 	name := c.PostForm("name")
 	if name == "" {
-		c.JSON(400, gin.H{"error": "Name is required"})
+		response.NewError(c, 400, "Name is required")
 		return
 	}
 	Author.Name = name
@@ -34,15 +34,14 @@ func (h *AuthorHandler) CreateAuthor(c *gin.Context) {
 	birthdatestr := c.PostForm("birthdate")
 	birthdate, err := time.Parse("2006-01-02", birthdatestr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid birthday format"})
+		response.NewError(c, 400, "Invalid birthday format")
 		return
 	}
 	Author.Birthdate = birthdate
 
 	data, err := h.service.CreateAuthor(c, &Author)
 	if err != nil {
-		logrus.Errorf("error occured in creating author: %v", err)
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.NewError(c, 500, err.Error())
 		return
 	}
 
@@ -54,14 +53,13 @@ func (h *AuthorHandler) CreateAuthor(c *gin.Context) {
 func (h *AuthorHandler) GetAuthorByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid author ID"})
+		response.NewError(c, 400, "Invalid author id")
 		return
 	}
 
 	data, err := h.service.GetAuthorByID(c, id)
 	if err != nil {
-		logrus.Errorf("error occured in fetching author: %v", err)
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.NewError(c, 500, err.Error())
 		return
 	}
 
@@ -73,15 +71,36 @@ func (h *AuthorHandler) GetAuthorByID(c *gin.Context) {
 func (h *AuthorHandler) GetAllAuthors(c *gin.Context) {
 	var pagination models.PaginationForAuthor
 
-	if err := c.ShouldBindQuery(&pagination); err != nil {
-		c.JSON(400, gin.H{"error": "Invalid pagination parameters"})
+	limit := c.Request.URL.Query().Get("limit")
+	if limit == "" {
+		limit = "10" // default value
+	}
+
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil || limitInt <= 0 {
+		response.NewError(c, 400, err.Error())
 		return
 	}
+	pagination.Limit = limitInt
+
+	offset := c.Request.URL.Query().Get("offset")
+	if offset == "" {
+		offset = "0" // default value
+	}
+
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil || offsetInt < 0 {
+		response.NewError(c, 400, err.Error())
+		return
+	}
+	pagination.Offset = offsetInt
+
+	criteria := c.Request.URL.Query().Get("criteria")
+	pagination.Criteria = criteria
 
 	authors, err := h.service.GetAllAuthor(c, pagination)
 	if err != nil {
-		logrus.Errorf("error occured in fetching all authors: %v", err.Error())
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.NewError(c, 500, err.Error())
 		return
 	}
 
@@ -93,7 +112,7 @@ func (h *AuthorHandler) GetAllAuthors(c *gin.Context) {
 func (h *AuthorHandler) UpdateAuthor(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid author ID"})
+		response.NewError(c, 400, "Invalid author id")
 		return
 	}
 
@@ -110,22 +129,20 @@ func (h *AuthorHandler) UpdateAuthor(c *gin.Context) {
 	if birthdateStr := c.PostForm("birthdate"); birthdateStr != "" {
 		parsedDate, err := time.Parse("2006-01-02", birthdateStr)
 		if err != nil {
-			logrus.Errorf("error in parsing birthdate: %v", err.Error())
-			c.JSON(400, gin.H{"error": err.Error()})
+			response.NewError(c, 400, "error in parsing birthdate")
 			return
 		}
 		updateInput.Birthdate = &parsedDate
 	}
 
-	response, err := h.service.UpdateAuthor(c, id, &updateInput)
+	responseData, err := h.service.UpdateAuthor(c, id, &updateInput)
 	if err != nil {
-		logrus.Errorf("error occured in updating author: %v", err.Error())
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.NewError(c, 500, err.Error())
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"response": response,
+		"response": responseData,
 	})
 }
 
@@ -136,14 +153,13 @@ func (h *AuthorHandler) DeleteAuthor(c *gin.Context) {
 		return
 	}
 
-	response, err := h.service.DeleteAuthor(c, id)
+	responseData, err := h.service.DeleteAuthor(c, id)
 	if err != nil {
-		logrus.Errorf("error occured in deleting author: %v", err.Error())
-		c.JSON(500, gin.H{"error": err.Error()})
+		response.NewError(c, 500, err.Error())
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"response": response,
+		"response": responseData,
 	})
 }

@@ -11,6 +11,12 @@ migrate_up:
 	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" -verbose up
 
 migrate_down:
-	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/ecommerce?sslmode=disable" -verbose down
+	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" -verbose down
 
-.PHONY: run tidy migration_create migrate_up migrate_down
+migration_fix:
+	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" force 1
+
+swag:
+	swag init -g cmd/main.go	
+
+.PHONY: run tidy migration_create migrate_up migrate_down migration_fix swag	

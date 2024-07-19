@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	// Load environment variables from.env file
 	if e := godotenv.Load(); e != nil {
 		logrus.Fatalf("failed to initialize .env file: %v", e)
 	}
@@ -25,6 +26,7 @@ func main() {
 	app := gin.Default()
 	api := app.Group("/api")
 
+	// Initialize routes
 	routes.InitAuthorRoutes(api, DB)
 	routes2.InitBookRoutes(api, DB)
 
