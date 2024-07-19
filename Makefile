@@ -1,20 +1,27 @@
+ifeq ($(POSTGRES_SETUP),)
+	POSTGRES_SETUP := user=postgres password=123456 dbname=task host=localhost port=5433 sslmode=disable
+endif
+
+MIGRATION_FOLDER=$(CURDIR)/schemas
+
+
+.PHONY: migration-create
+migration-create:
+	goose -dir "$(MIGRATION_FOLDER)" create "$(name)" sql
+
+.PHONY: migration-up
+migration-up:
+	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP)" up
+
+.PHONY: migration-down
+migration-down:
+	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_SETUP)" down
+
 run:
 	go run cmd/main.go
 
 tidy:
 	go mod tidy
-
-migration_create:
-	migrate create -ext sql -dir ./Schemas -seq tables_1
-
-migrate_up:
-	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" -verbose up
-
-migrate_down:
-	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" -verbose down
-
-migration_fix:
-	migrate -path ./Schemas -database "postgresql://postgres:123456@localhost:5432/task?sslmode=disable" force 1
 
 swag:
 	swag init -g cmd/main.go	

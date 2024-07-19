@@ -24,6 +24,7 @@ func (s *BookService) GetBookByID(ctx context.Context, book_id int) (*models.Boo
 }
 
 func (s *BookService) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.Book, error) {
+	// transction idea
 	return s.repo.GetAllBooks(ctx, pagination)
 }
 

@@ -20,7 +20,7 @@ func GetDBClient() (DB, error) {
 	}
 
 	if err = DB.Ping(ctx); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return DB, nil
