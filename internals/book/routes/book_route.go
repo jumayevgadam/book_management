@@ -6,11 +6,12 @@ import (
 	"github.com/jumayevgadam/book_management/internals/book/handler"
 	"github.com/jumayevgadam/book_management/internals/book/repository"
 	"github.com/jumayevgadam/book_management/internals/book/service"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
-func InitBookRoutes(router *gin.RouterGroup, DB *pgxpool.Pool) {
+func InitBookRoutes(router *gin.RouterGroup, DB *pgxpool.Pool, logger logger.Logger) {
 	// Book routes
-	BookRepos := repository.NewDTORepository(DB)
+	BookRepos := repository.NewDTORepository(DB, logger)
 	BookServices := service.NewDTOService(BookRepos)
 	BookHandlers := handler.NewDTOHandler(BookServices)
 

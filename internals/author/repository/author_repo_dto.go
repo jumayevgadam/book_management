@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/author/models"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
 type AuthorDTO interface {
@@ -19,8 +20,8 @@ type Repository struct {
 	AuthorDTO
 }
 
-func NewDTORepository(DB *pgxpool.Pool) *Repository {
+func NewDTORepository(DB *pgxpool.Pool, logger logger.Logger) *Repository {
 	return &Repository{
-		AuthorDTO: NewAuthorRepository(DB),
+		AuthorDTO: NewAuthorRepository(DB, logger),
 	}
 }

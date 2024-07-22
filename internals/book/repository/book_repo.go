@@ -9,21 +9,26 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/book/models"
-	"github.com/sirupsen/logrus"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
 type BookRepository struct {
-	DB *pgxpool.Pool
+	DB     *pgxpool.Pool
+	logger logger.Logger
 }
 
-func NewBookRepository(DB *pgxpool.Pool) *BookRepository {
-	return &BookRepository{DB: DB}
+func NewBookRepository(DB *pgxpool.Pool, logger logger.Logger) *BookRepository {
+	return &BookRepository{
+		DB:     DB,
+		logger: logger,
+	}
 }
 
 func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*models.Book, error) {
 	pgTx, err := r.DB.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %v", err)
+		r.logger.Errorf("failed to begin transaction: %v", err.Error())
+		return nil, err
 	}
 
 	var exists bool
@@ -33,14 +38,17 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*mo
 
 	err = pgTx.QueryRow(ctx, query, book.Author_ID).Scan(&exists)
 	if err != nil {
+		r.logger.Errorf("invalid author id")
 		return nil, fmt.Errorf("failed in author check: %v", err.Error())
 	}
 
 	if !exists {
+		r.logger.Errorf("does not exist author with that id")
 		return nil, fmt.Errorf("author with id %d does not exist", book.Author_ID)
 	}
 
 	if book.Year > time.Now().Year() {
+		r.logger.Errorf("invalid year %d", book.Year)
 		return nil, fmt.Errorf("invalid year %d", book.Year)
 	}
 
@@ -51,7 +59,8 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*mo
 
 	err = pgTx.QueryRow(ctx, query2, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed in book creation: %v", err.Error())
+		r.logger.Errorf("error in book creation: %v", err.Error())
+		return nil, err
 	}
 
 	return book, nil
@@ -66,7 +75,7 @@ func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.
 
 	err := pgxscan.Get(ctx, r.DB, &Book, query, book_id)
 	if err != nil {
-		logrus.Errorf("error in fetching one book: %v", err.Error())
+		r.logger.Errorf("error in fetching one book: %v", err.Error())
 		return nil, err
 	}
 
@@ -116,7 +125,7 @@ func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.Pagi
 
 	err := pgxscan.Select(ctx, r.DB, &Books, query, args...)
 	if err != nil {
-		logrus.Errorf("error in fetching all books: %v", err.Error())
+		r.logger.Errorf("error in fetching all books: %v", err.Error())
 		return nil, err
 	}
 
@@ -159,9 +168,11 @@ func (r *BookRepository) UpdateBook(ctx context.Context, book_id int, updateInpu
 	var response string
 	_, err := r.DB.Exec(ctx, query, args...)
 	if err != nil {
-		logrus.Errorf("error in updating book: %v", err.Error())
+		r.logger.Errorf("error in updating book: %v", err.Error())
 		return response, err
 	}
+
+	r.logger.Debugf("Updated query: ", query)
 
 	response = fmt.Sprintf("Book with ID %d updated successfully", book_id)
 	return response, nil
@@ -175,7 +186,7 @@ func (r *BookRepository) DeleteBook(ctx context.Context, book_id int) (string, e
 
 	err := r.DB.QueryRow(ctx, query, book_id).Scan(&response)
 	if err != nil {
-		logrus.Errorf("error in deleting book: %v", err.Error())
+		r.logger.Errorf("error in deleting book: %v", err.Error())
 		return response, err
 	}
 

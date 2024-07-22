@@ -1,9 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/jumayevgadam/book_management/internals/dbconn"
 	"github.com/jumayevgadam/book_management/internals/server"
-	"os"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -23,12 +25,14 @@ func main() {
 		logrus.Printf("failed to connect to database: %v", err)
 	}
 
+	log := logger.NewLogrusLogger()
+
 	app := gin.Default()
 	api := app.Group("/api")
 
 	// Initialize routes
-	routes.InitAuthorRoutes(api, DB)
-	routes2.InitBookRoutes(api, DB)
+	routes.InitAuthorRoutes(api, DB, log)
+	routes2.InitBookRoutes(api, DB, log)
 
 	// Call server
 	srv := &server.Server{}

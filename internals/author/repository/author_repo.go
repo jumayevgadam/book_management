@@ -8,21 +8,25 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/author/models"
-	"github.com/sirupsen/logrus"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
 type AuthorRepository struct {
-	DB *pgxpool.Pool
+	DB     *pgxpool.Pool
+	logger logger.Logger
 }
 
-func NewAuthorRepository(DB *pgxpool.Pool) *AuthorRepository {
-	return &AuthorRepository{DB: DB}
+func NewAuthorRepository(DB *pgxpool.Pool, logger logger.Logger) *AuthorRepository {
+	return &AuthorRepository{
+		DB:     DB,
+		logger: logger,
+	}
 }
 
 func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Author) (*models.Author, error) {
 	pgTx, err := r.DB.Begin(ctx)
 	if err != nil {
-		logrus.Errorf("error in beginning transaction: %v", err.Error())
+		r.logger.Errorf("error in starting transaction: %v", err.Error())
 	}
 
 	query := `INSERT INTO authors (
@@ -32,7 +36,7 @@ func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Auth
 
 	err = pgTx.QueryRow(ctx, query, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
 	if err != nil {
-		logrus.Errorf("error in creating author(repo): %v", err)
+		r.logger.Errorf("error in author creation: %v", err.Error())
 		return nil, err
 	}
 
@@ -48,7 +52,7 @@ func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*m
 					WHERE id = $1`
 	err := pgxscan.Get(ctx, r.DB, &OneAuthor, query, author_id)
 	if err != nil {
-		logrus.Errorf("error in fetching one author: %v", err.Error())
+		r.logger.Errorf("error in fetching one author: %v", err.Error())
 		return nil, err
 	}
 
@@ -77,7 +81,7 @@ func (r *AuthorRepository) GetAllAuthor(ctx context.Context, pagination models.P
 
 	err := pgxscan.Select(ctx, r.DB, &Authors, query, args...)
 	if err != nil {
-		logrus.Errorf("error in fetching all authors: %v", err.Error())
+		r.logger.Errorf("error in selecting all authors: %v", err.Error())
 		return nil, err
 	}
 
@@ -120,7 +124,7 @@ func (r *AuthorRepository) UpdateAuthor(ctx context.Context, author_id int, upda
 	var response string
 	_, err := r.DB.Exec(ctx, query, args...)
 	if err != nil {
-		logrus.Errorf("error in updating author: %v", err.Error())
+		r.logger.Errorf("error in updating author: %v", err.Error())
 		return response, err
 	}
 
@@ -136,7 +140,7 @@ func (r *AuthorRepository) DeleteAuthor(ctx context.Context, author_id int) (str
 
 	err := r.DB.QueryRow(ctx, query, author_id).Scan(&response)
 	if err != nil {
-		logrus.Errorf("error in deleting author: %v", err.Error())
+		r.logger.Errorf("error in deleting author: %v", err.Error())
 		return response, err
 	}
 

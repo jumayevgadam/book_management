@@ -6,10 +6,11 @@ import (
 	"github.com/jumayevgadam/book_management/internals/author/handler"
 	"github.com/jumayevgadam/book_management/internals/author/repository"
 	"github.com/jumayevgadam/book_management/internals/author/service"
+	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
-func InitAuthorRoutes(router *gin.RouterGroup, DB *pgxpool.Pool) {
-	AuthorRepos := repository.NewDTORepository(DB)
+func InitAuthorRoutes(router *gin.RouterGroup, DB *pgxpool.Pool, logger logger.Logger) {
+	AuthorRepos := repository.NewDTORepository(DB, logger)
 	AuthorServices := service.NewDTOService(AuthorRepos)
 	AuthorHandlers := handler.NewDTOHandler(AuthorServices)
 
