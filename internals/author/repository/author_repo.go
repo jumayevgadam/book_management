@@ -20,12 +20,17 @@ func NewAuthorRepository(DB *pgxpool.Pool) *AuthorRepository {
 }
 
 func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Author) (*models.Author, error) {
+	pgTx, err := r.DB.Begin(ctx)
+	if err != nil {
+		logrus.Errorf("error in beginning transaction: %v", err.Error())
+	}
+
 	query := `INSERT INTO authors (
 					name, biography, birthdate) 
 					VALUES ($1, $2, $3) 
 					RETURNING id`
 
-	err := r.DB.QueryRow(ctx, query, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
+	err = pgTx.QueryRow(ctx, query, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
 	if err != nil {
 		logrus.Errorf("error in creating author(repo): %v", err)
 		return nil, err

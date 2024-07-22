@@ -21,12 +21,17 @@ func NewBookRepository(DB *pgxpool.Pool) *BookRepository {
 }
 
 func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*models.Book, error) {
+	pgTx, err := r.DB.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %v", err)
+	}
+
 	var exists bool
 	query := `SELECT EXISTS(
 				 SELECT 1 FROM authors 
 				 WHERE id = $1)`
 
-	err := r.DB.QueryRow(ctx, query, book.Author_ID).Scan(&exists)
+	err = pgTx.QueryRow(ctx, query, book.Author_ID).Scan(&exists)
 	if err != nil {
 		return nil, fmt.Errorf("failed in author check: %v", err.Error())
 	}
@@ -44,7 +49,7 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.Book) (*mo
 					VALUES ($1, $2, $3, $4) 
 					RETURNING id`
 
-	err = r.DB.QueryRow(ctx, query2, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
+	err = pgTx.QueryRow(ctx, query2, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed in book creation: %v", err.Error())
 	}

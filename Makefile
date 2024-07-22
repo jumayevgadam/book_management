@@ -1,5 +1,5 @@
 ifeq ($(POSTGRES_SETUP),)
-	POSTGRES_SETUP := user=postgres password=123456 dbname=task host=localhost port=5433 sslmode=disable
+	POSTGRES_SETUP := user=postgres password=123456 dbname=library host=localhost port=5432 sslmode=disable
 endif
 
 MIGRATION_FOLDER=$(CURDIR)/schemas
