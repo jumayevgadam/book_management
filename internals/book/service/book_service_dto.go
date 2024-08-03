@@ -7,7 +7,7 @@ import (
 	"github.com/jumayevgadam/book_management/internals/book/repository"
 )
 
-type BookDTO interface {
+type IBookService interface {
 	CreateBook(ctx context.Context, book *models.BookDAO) (*models.BookDTO, error)
 	GetBookByID(ctx context.Context, book_id int) (*models.BookDTO, error)
 	GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error)
@@ -16,11 +16,11 @@ type BookDTO interface {
 }
 
 type Service struct {
-	BookDTO
+	IBookService
 }
 
 func NewDTOService(repo *repository.Repository) *Service {
 	return &Service{
-		BookDTO: NewBookService(&repo.BookDTO),
+		IBookService: NewBookService(&repo.IBookRepository),
 	}
 }

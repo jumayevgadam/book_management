@@ -8,7 +8,7 @@ import (
 	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
-type BookDTO interface {
+type IBookRepository interface {
 	CreateBook(ctx context.Context, book *models.BookDAO) (*models.BookDTO, error)
 	GetBookByID(ctx context.Context, book_id int) (*models.BookDTO, error)
 	GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error)
@@ -17,11 +17,11 @@ type BookDTO interface {
 }
 
 type Repository struct {
-	BookDTO
+	IBookRepository
 }
 
 func NewDTORepository(DB *pgxpool.Pool, logger logger.Logger) *Repository {
 	return &Repository{
-		BookDTO: NewBookRepository(DB, logger),
+		IBookRepository: NewBookRepository(DB, logger),
 	}
 }
