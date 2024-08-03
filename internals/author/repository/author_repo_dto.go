@@ -8,7 +8,7 @@ import (
 	"github.com/jumayevgadam/book_management/pkg/logger"
 )
 
-type AuthorDTO interface {
+type IAuthorRepository interface {
 	CreateAuthor(ctx context.Context, author *models.AuthorDAO) (*models.AuthorDTO, error)
 	GetAuthorByID(ctx context.Context, author_id int) (*models.AuthorDTO, error)
 	GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error)
@@ -17,11 +17,11 @@ type AuthorDTO interface {
 }
 
 type Repository struct {
-	AuthorDTO
+	IAuthorRepository
 }
 
 func NewDTORepository(DB *pgxpool.Pool, logger logger.Logger) *Repository {
 	return &Repository{
-		AuthorDTO: NewAuthorRepository(DB, logger),
+		IAuthorRepository: NewAuthorRepository(DB, logger),
 	}
 }

@@ -8,10 +8,10 @@ import (
 )
 
 type AuthorService struct {
-	repo repository.AuthorDTO
+	repo repository.IAuthorRepository
 }
 
-func NewAuthorService(repo *repository.AuthorDTO) *AuthorService {
+func NewAuthorService(repo *repository.IAuthorRepository) *AuthorService {
 	return &AuthorService{repo: *repo}
 }
 

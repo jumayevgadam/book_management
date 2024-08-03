@@ -7,7 +7,7 @@ import (
 	"github.com/jumayevgadam/book_management/internals/author/repository"
 )
 
-type AuthorDTO interface {
+type IAuthorService interface {
 	CreateAuthor(ctx context.Context, author *models.AuthorDAO) (*models.AuthorDTO, error)
 	GetAuthorByID(ctx context.Context, author_id int) (*models.AuthorDTO, error)
 	GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error)
@@ -16,11 +16,11 @@ type AuthorDTO interface {
 }
 
 type Service struct {
-	AuthorDTO
+	IAuthorService
 }
 
 func NewDTOService(repo *repository.Repository) *Service {
 	return &Service{
-		AuthorDTO: NewAuthorService(&repo.AuthorDTO),
+		IAuthorService: NewAuthorService(&repo.IAuthorRepository),
 	}
 }
