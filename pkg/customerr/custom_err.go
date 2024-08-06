@@ -1,7 +1,7 @@
 package customerr
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +13,8 @@ type StatusResponse struct {
 	Status string `json:"status"`
 }
 
-func NewError(c *gin.Context, statusCode int, message string) {
+func NewError(c echo.Context, statusCode int, message string) {
 	logrus.Error(message)
-	c.AbortWithStatusJSON(statusCode, errorResponse{message})
+	c.JSON(statusCode, errorResponse{message})
+	//c.AbortWithStatusJSON(statusCode, errorResponse{message})
 }

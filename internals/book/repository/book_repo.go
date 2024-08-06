@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/book/models"
 	"github.com/jumayevgadam/book_management/pkg/logger"
+	"github.com/labstack/echo/v4"
 )
 
 type BookRepository struct {
@@ -24,7 +24,9 @@ func NewBookRepository(DB *pgxpool.Pool, logger logger.Logger) *BookRepository {
 	}
 }
 
-func (r *BookRepository) CreateBook(ctx context.Context, book *models.BookDAO) (*models.BookDTO, error) {
+func (r *BookRepository) CreateBook(c echo.Context, book *models.BookDAO) (*models.BookDTO, error) {
+	ctx := c.Request().Context()
+
 	pgTx, err := r.DB.Begin(ctx)
 	if err != nil {
 		r.logger.Errorf("failed to begin transaction: %v", err.Error())
@@ -32,11 +34,7 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.BookDAO) (
 	}
 
 	var exists bool
-	query := `SELECT EXISTS(
-				 SELECT 1 FROM authors 
-				 WHERE id = $1)`
-
-	err = pgTx.QueryRow(ctx, query, book.Author_ID).Scan(&exists)
+	err = pgTx.QueryRow(ctx, existanceAuthorIDQuery, book.Author_ID).Scan(&exists)
 	if err != nil {
 		r.logger.Errorf("invalid author id")
 		return nil, fmt.Errorf("failed in author check: %v", err.Error())
@@ -52,12 +50,7 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.BookDAO) (
 		return nil, fmt.Errorf("invalid year %d", book.Year)
 	}
 
-	query2 := `INSERT INTO books(
-					title, author_id, year, genre)
-					VALUES ($1, $2, $3, $4) 
-					RETURNING id`
-
-	err = pgTx.QueryRow(ctx, query2, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
+	err = pgTx.QueryRow(ctx, createBookQuery, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
 	if err != nil {
 		r.logger.Errorf("error in book creation: %v", err.Error())
 		return nil, err
@@ -72,14 +65,11 @@ func (r *BookRepository) CreateBook(ctx context.Context, book *models.BookDAO) (
 	return models.ConvertBookDAOToDTO(book), nil
 }
 
-func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.BookDTO, error) {
-	var Book models.BookDAO
-	query := `SELECT
-					id, title, author_id, year, genre
-					FROM books
-					WHERE id = $1`
+func (r *BookRepository) GetBookByID(c echo.Context, book_id int) (*models.BookDTO, error) {
+	ctx := c.Request().Context()
 
-	err := pgxscan.Get(ctx, r.DB, &Book, query, book_id)
+	var Book models.BookDAO
+	err := pgxscan.Get(ctx, r.DB, &Book, gettingOneBookQuery, book_id)
 	if err != nil {
 		r.logger.Errorf("error in fetching one book: %v", err.Error())
 		return nil, err
@@ -90,9 +80,10 @@ func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.
 
 // Author can be search books about with title or published year
 // Paginnation also need; generally filter need::
-func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error) {
-	var Books []*models.BookDAO
+func (r *BookRepository) GetAllBooks(c echo.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error) {
+	ctx := c.Request().Context()
 
+	var Books []*models.BookDAO
 	// Base query
 	query := `SELECT * FROM books`
 
@@ -143,7 +134,9 @@ func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.Pagi
 	return BookDTOs, nil
 }
 
-func (r *BookRepository) UpdateBook(ctx context.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
+func (r *BookRepository) UpdateBook(c echo.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
+	ctx := c.Request().Context()
+
 	setValues := make([]string, 0)
 	args := make([]interface{}, 0)
 	argId := 1
@@ -189,13 +182,11 @@ func (r *BookRepository) UpdateBook(ctx context.Context, book_id int, updateInpu
 	return response, nil
 }
 
-func (r *BookRepository) DeleteBook(ctx context.Context, book_id int) (string, error) {
-	query := `DELETE FROM books 
-               WHERE id = $1 
-               RETURNING 'Book deleted'`
-	var response string
+func (r *BookRepository) DeleteBook(c echo.Context, book_id int) (string, error) {
+	ctx := c.Request().Context()
 
-	err := r.DB.QueryRow(ctx, query, book_id).Scan(&response)
+	var response string
+	err := r.DB.QueryRow(ctx, deleteBookQuery, book_id).Scan(&response)
 	if err != nil {
 		r.logger.Errorf("error in deleting book: %v", err.Error())
 		return response, err

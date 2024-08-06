@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/author/models"
 	"github.com/jumayevgadam/book_management/pkg/logger"
+	"github.com/labstack/echo/v4"
 )
 
 type AuthorRepository struct {
@@ -23,7 +23,9 @@ func NewAuthorRepository(DB *pgxpool.Pool, logger logger.Logger) *AuthorReposito
 	}
 }
 
-func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.AuthorDAO) (*models.AuthorDTO, error) {
+func (r *AuthorRepository) CreateAuthor(c echo.Context, author *models.AuthorDAO) (*models.AuthorDTO, error) {
+	ctx := c.Request().Context()
+
 	pgTx, err := r.DB.Begin(ctx)
 	if err != nil {
 		r.logger.Errorf("error in starting transaction: %v", err.Error())
@@ -37,12 +39,7 @@ func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Auth
 		}
 	}()
 
-	query := `INSERT INTO authors (
-					name, biography, birthdate) 
-					VALUES ($1, $2, $3) 
-					RETURNING id`
-
-	err = pgTx.QueryRow(ctx, query, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
+	err = pgTx.QueryRow(ctx, createAuthorQuery, author.Name, author.Biography, author.Birthdate).Scan(&author.ID)
 	if err != nil {
 		r.logger.Errorf("error in author creation: %v", err.Error())
 		return nil, err
@@ -51,14 +48,10 @@ func (r *AuthorRepository) CreateAuthor(ctx context.Context, author *models.Auth
 	return models.ConvertAuthorDAOToDTO(author), nil
 }
 
-func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*models.AuthorDTO, error) {
+func (r *AuthorRepository) GetAuthorByID(c echo.Context, author_id int) (*models.AuthorDTO, error) {
+	ctx := c.Request().Context()
 	var OneAuthor models.AuthorDAO
-
-	query := `SELECT 
-					id, name, biography, birthdate 
-					FROM authors 
-					WHERE id = $1`
-	err := pgxscan.Get(ctx, r.DB, &OneAuthor, query, author_id)
+	err := pgxscan.Get(ctx, r.DB, &OneAuthor, getOneAuthorQuery, author_id)
 	if err != nil {
 		r.logger.Errorf("error in fetching one author: %v", err.Error())
 		return nil, err
@@ -67,9 +60,9 @@ func (r *AuthorRepository) GetAuthorByID(ctx context.Context, author_id int) (*m
 	return models.ConvertAuthorDAOToDTO(&OneAuthor), nil
 }
 
-func (r *AuthorRepository) GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error) {
+func (r *AuthorRepository) GetAllAuthor(c echo.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error) {
+	ctx := c.Request().Context()
 	var Authors []*models.AuthorDAO
-
 	// Base query
 	query := `SELECT * FROM authors`
 
@@ -101,7 +94,8 @@ func (r *AuthorRepository) GetAllAuthor(ctx context.Context, pagination models.P
 	return AuthorDTOs, nil
 }
 
-func (r *AuthorRepository) UpdateAuthor(ctx context.Context, author_id int, updateInput *models.UpdateInputAuthor) (string, error) {
+func (r *AuthorRepository) UpdateAuthor(c echo.Context, author_id int, updateInput *models.UpdateInputAuthor) (string, error) {
+	ctx := c.Request().Context()
 	setValues := make([]string, 0)
 	args := make([]interface{}, 0)
 	argId := 1
@@ -145,13 +139,11 @@ func (r *AuthorRepository) UpdateAuthor(ctx context.Context, author_id int, upda
 	return response, nil
 }
 
-func (r *AuthorRepository) DeleteAuthor(ctx context.Context, author_id int) (string, error) {
-	query := `DELETE FROM authors 
-					WHERE id = $1 
-					RETURNING 'Author deleted'`
+func (r *AuthorRepository) DeleteAuthor(c echo.Context, author_id int) (string, error) {
+	ctx := c.Request().Context()
 	var response string
 
-	err := r.DB.QueryRow(ctx, query, author_id).Scan(&response)
+	err := r.DB.QueryRow(ctx, deleteAuthorQuery, author_id).Scan(&response)
 	if err != nil {
 		r.logger.Errorf("error in deleting author: %v", err.Error())
 		return response, err

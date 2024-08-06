@@ -6,8 +6,8 @@ import (
 	"github.com/jumayevgadam/book_management/internals/dbconn"
 	"github.com/jumayevgadam/book_management/internals/server"
 	"github.com/jumayevgadam/book_management/pkg/logger"
+	"github.com/labstack/echo/v4"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/jumayevgadam/book_management/internals/author/routes"
 	routes2 "github.com/jumayevgadam/book_management/internals/book/routes"
@@ -27,7 +27,7 @@ func main() {
 
 	log := logger.NewLogrusLogger()
 
-	app := gin.Default()
+	app := echo.New()
 	api := app.Group("/api")
 
 	// Initialize routes

@@ -1,19 +1,18 @@
 package repository
 
 import (
-	"context"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/author/models"
 	"github.com/jumayevgadam/book_management/pkg/logger"
+	"github.com/labstack/echo/v4"
 )
 
 type IAuthorRepository interface {
-	CreateAuthor(ctx context.Context, author *models.AuthorDAO) (*models.AuthorDTO, error)
-	GetAuthorByID(ctx context.Context, author_id int) (*models.AuthorDTO, error)
-	GetAllAuthor(ctx context.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error)
-	UpdateAuthor(ctx context.Context, author_id int, update *models.UpdateInputAuthor) (string, error)
-	DeleteAuthor(ctx context.Context, author_id int) (string, error)
+	CreateAuthor(ctx echo.Context, author *models.AuthorDAO) (*models.AuthorDTO, error)
+	GetAuthorByID(ctx echo.Context, author_id int) (*models.AuthorDTO, error)
+	GetAllAuthor(ctx echo.Context, pagination models.PaginationForAuthor) ([]*models.AuthorDTO, error)
+	UpdateAuthor(ctx echo.Context, author_id int, update *models.UpdateInputAuthor) (string, error)
+	DeleteAuthor(ctx echo.Context, author_id int) (string, error)
 }
 
 type Repository struct {
