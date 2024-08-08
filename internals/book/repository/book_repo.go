@@ -8,71 +8,69 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jumayevgadam/book_management/internals/book/models"
-	"github.com/jumayevgadam/book_management/pkg/logger"
-	"github.com/labstack/echo/v4"
+	"golang.org/x/net/context"
 )
 
 type BookRepository struct {
-	DB     *pgxpool.Pool
-	logger logger.Logger
+	DB *pgxpool.Pool
 }
 
-func NewBookRepository(DB *pgxpool.Pool, logger logger.Logger) *BookRepository {
+func NewBookRepository(DB *pgxpool.Pool) *BookRepository {
 	return &BookRepository{
-		DB:     DB,
-		logger: logger,
+		DB: DB,
 	}
 }
 
-func (r *BookRepository) CreateBook(c echo.Context, book *models.BookDAO) (*models.BookDTO, error) {
-	ctx := c.Request().Context()
-
+func (r *BookRepository) CreateBook(ctx context.Context, book *models.BookDAO) (*models.BookDTO, error) {
 	pgTx, err := r.DB.Begin(ctx)
 	if err != nil {
-		r.logger.Errorf("failed to begin transaction: %v", err.Error())
 		return nil, err
 	}
 
 	var exists bool
 	err = pgTx.QueryRow(ctx, existanceAuthorIDQuery, book.Author_ID).Scan(&exists)
 	if err != nil {
-		r.logger.Errorf("invalid author id")
-		return nil, fmt.Errorf("failed in author check: %v", err.Error())
+		return nil, fmt.Errorf("[%v.QueryRow]=[%v]", createBookDir, err)
 	}
 
 	if !exists {
-		r.logger.Errorf("does not exist author with that id")
-		return nil, fmt.Errorf("author with id %d does not exist", book.Author_ID)
+		return nil, fmt.Errorf("[%v.ifNotExist]=[%d]", createBookDir, book.Author_ID)
 	}
 
 	if book.Year > time.Now().Year() {
-		r.logger.Errorf("invalid year %d", book.Year)
-		return nil, fmt.Errorf("invalid year %d", book.Year)
+		return nil, fmt.Errorf("[%v]=[%d is invalid_year]", createBookDir, book.Year)
 	}
 
-	err = pgTx.QueryRow(ctx, createBookQuery, book.Title, book.Author_ID, book.Year, book.Genre).Scan(&book.ID)
+	err = pgTx.QueryRow(
+		ctx,
+		createBookQuery,
+		book.Title,
+		book.Author_ID,
+		book.Year,
+		book.Genre).Scan(&book.ID)
 	if err != nil {
-		r.logger.Errorf("error in book creation: %v", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("[%v.QueryRow2]=[%v]", createBookDir, err)
 	}
 
 	err = pgTx.Commit(ctx)
 	if err != nil {
-		r.logger.Errorf("failed to commit transaction: %v", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("[%v.Commit]=[%v]", createBookDir, err)
 	}
 
 	return models.ConvertBookDAOToDTO(book), nil
 }
 
-func (r *BookRepository) GetBookByID(c echo.Context, book_id int) (*models.BookDTO, error) {
-	ctx := c.Request().Context()
-
+// GetBookBYID is
+func (r *BookRepository) GetBookByID(ctx context.Context, book_id int) (*models.BookDTO, error) {
 	var Book models.BookDAO
-	err := pgxscan.Get(ctx, r.DB, &Book, gettingOneBookQuery, book_id)
+	err := pgxscan.Get(
+		ctx,
+		r.DB,
+		&Book,
+		gettingOneBookQuery,
+		book_id)
 	if err != nil {
-		r.logger.Errorf("error in fetching one book: %v", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("[%v.Get]=[%v]", getBookByIDDir, err)
 	}
 
 	return models.ConvertBookDAOToDTO(&Book), nil
@@ -80,9 +78,8 @@ func (r *BookRepository) GetBookByID(c echo.Context, book_id int) (*models.BookD
 
 // Author can be search books about with title or published year
 // Paginnation also need; generally filter need::
-func (r *BookRepository) GetAllBooks(c echo.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error) {
-	ctx := c.Request().Context()
-
+// GetAllBooks is
+func (r *BookRepository) GetAllBooks(ctx context.Context, pagination models.PaginationForBook) ([]*models.BookDTO, error) {
 	var Books []*models.BookDAO
 	// Base query
 	query := `SELECT * FROM books`
@@ -120,10 +117,15 @@ func (r *BookRepository) GetAllBooks(c echo.Context, pagination models.Paginatio
 		argId, argId+1)
 	args = append(args, pagination.Limit, pagination.Offset)
 
-	err := pgxscan.Select(ctx, r.DB, &Books, query, args...)
+	err := pgxscan.Select(
+		ctx,
+		r.DB,
+		&Books,
+		query,
+		args...,
+	)
 	if err != nil {
-		r.logger.Errorf("error in fetching all books: %v", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("[%v.Select]=[%v]", getAllBooksDir, err)
 	}
 
 	var BookDTOs []*models.BookDTO
@@ -134,9 +136,8 @@ func (r *BookRepository) GetAllBooks(c echo.Context, pagination models.Paginatio
 	return BookDTOs, nil
 }
 
-func (r *BookRepository) UpdateBook(c echo.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
-	ctx := c.Request().Context()
-
+// UpdateBook is
+func (r *BookRepository) UpdateBook(ctx context.Context, book_id int, updateInput *models.UpdateInputBook) (string, error) {
 	setValues := make([]string, 0)
 	args := make([]interface{}, 0)
 	argId := 1
@@ -160,7 +161,7 @@ func (r *BookRepository) UpdateBook(c echo.Context, book_id int, updateInput *mo
 	}
 
 	if len(setValues) == 0 {
-		return "", fmt.Errorf("no fields for update")
+		return "", fmt.Errorf("[%v.checkingLenSetValues]", updateBookDir)
 	}
 
 	query := fmt.Sprintf(`UPDATE books SET
@@ -170,26 +171,28 @@ func (r *BookRepository) UpdateBook(c echo.Context, book_id int, updateInput *mo
 	args = append(args, book_id)
 
 	var response string
-	_, err := r.DB.Exec(ctx, query, args...)
+	_, err := r.DB.Exec(
+		ctx,
+		query,
+		args...,
+	)
 	if err != nil {
-		r.logger.Errorf("error in updating book: %v", err.Error())
-		return response, err
+		return response, fmt.Errorf("[%v.Exec]=[%v]", updateBookDir, err)
 	}
-
-	r.logger.Debugf("Updated query: ", query)
 
 	response = fmt.Sprintf("Book with ID %d updated successfully", book_id)
 	return response, nil
 }
 
-func (r *BookRepository) DeleteBook(c echo.Context, book_id int) (string, error) {
-	ctx := c.Request().Context()
-
+// DeleteBook is
+func (r *BookRepository) DeleteBook(ctx context.Context, book_id int) (string, error) {
 	var response string
-	err := r.DB.QueryRow(ctx, deleteBookQuery, book_id).Scan(&response)
+	err := r.DB.QueryRow(
+		ctx,
+		deleteBookQuery,
+		book_id).Scan(&response)
 	if err != nil {
-		r.logger.Errorf("error in deleting book: %v", err.Error())
-		return response, err
+		return response, fmt.Errorf("[%v.QueryRow]=[%v]", deleteBookDir, err)
 	}
 
 	response = fmt.Sprintf("Book with ID %d deleted successfully", book_id)

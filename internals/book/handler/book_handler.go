@@ -6,8 +6,10 @@ import (
 
 	"github.com/jumayevgadam/book_management/internals/book/models"
 	"github.com/jumayevgadam/book_management/internals/book/service"
-	response "github.com/jumayevgadam/book_management/pkg/customerr"
+	httperr "github.com/jumayevgadam/book_management/pkg/httpErr"
+	"github.com/jumayevgadam/book_management/pkg/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/opentracing/opentracing-go"
 )
 
 type BookHandler struct {
@@ -20,36 +22,17 @@ func NewDTOHandler(service *service.Service) *BookHandler {
 
 func (h *BookHandler) CreateBook() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		span, ctx := opentracing.StartSpanFromContext(utils.GetRequestCtx(c), "book.handler.CreateBook")
+		defer span.Finish()
+
 		var Book models.BookDAO
-
-		title := c.FormValue("title")
-		if title == "" {
-			response.NewError(c, 400, "title is required")
-			return nil
+		if err := c.Bind(&Book); err != nil {
+			return c.JSON(httperr.ErrorResponse(err))
 		}
-		Book.Title = title
 
-		authorID, err := strconv.Atoi(c.FormValue("author_id"))
+		data, err := h.service.CreateBook(ctx, &Book)
 		if err != nil {
-			response.NewError(c, 400, "invalid author id")
-			return err
-		}
-		Book.Author_ID = authorID
-
-		year, err := strconv.Atoi(c.FormValue("year"))
-		if err != nil {
-			response.NewError(c, 400, err.Error())
-			return err
-		}
-		Book.Year = year
-
-		genre := c.FormValue("genre")
-		Book.Genre = genre
-
-		data, err := h.service.CreateBook(c, &Book)
-		if err != nil {
-			response.NewError(c, 500, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		c.JSON(200, echo.Map{
@@ -62,16 +45,17 @@ func (h *BookHandler) CreateBook() echo.HandlerFunc {
 
 func (h *BookHandler) GetBookByID() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		span, ctx := opentracing.StartSpanFromContext(utils.GetRequestCtx(c), "book.handler.GetBookByID")
+		defer span.Finish()
+
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			response.NewError(c, 400, "invalid author id")
-			return nil
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
-		data, err := h.service.GetBookByID(c, id)
+		data, err := h.service.GetBookByID(ctx, id)
 		if err != nil {
-			response.NewError(c, 500, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		c.JSON(200, echo.Map{
@@ -84,8 +68,10 @@ func (h *BookHandler) GetBookByID() echo.HandlerFunc {
 
 func (h *BookHandler) GetAllBooks() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var pagination models.PaginationForBook
+		span, ctx := opentracing.StartSpanFromContext(utils.GetRequestCtx(c), "book.handler.GetAllBooks")
+		defer span.Finish()
 
+		var pagination models.PaginationForBook
 		limit := c.Request().URL.Query().Get("limit")
 		if limit == "" {
 			limit = "10" // default value
@@ -93,8 +79,7 @@ func (h *BookHandler) GetAllBooks() echo.HandlerFunc {
 
 		limitInt, err := strconv.Atoi(limit)
 		if err != nil || limitInt <= 0 {
-			response.NewError(c, 400, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 		pagination.Limit = limitInt
 
@@ -105,8 +90,7 @@ func (h *BookHandler) GetAllBooks() echo.HandlerFunc {
 
 		offsetInt, err := strconv.Atoi(offset)
 		if err != nil {
-			response.NewError(c, 400, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 		pagination.Offset = offsetInt
 
@@ -116,18 +100,16 @@ func (h *BookHandler) GetAllBooks() echo.HandlerFunc {
 		yearStr := c.Request().URL.Query().Get("year")
 		yearInt, err := strconv.Atoi(yearStr)
 		if err != nil && yearInt < 0 && yearInt > time.Now().Year() {
-			response.NewError(c, 400, "invalid year")
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 		pagination.Year = yearInt
 
 		genre := c.Request().URL.Query().Get("genre")
 		pagination.Genre = genre
 
-		data, err := h.service.GetAllBooks(c, pagination)
+		data, err := h.service.GetAllBooks(ctx, pagination)
 		if err != nil {
-			response.NewError(c, 500, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		c.JSON(200, echo.Map{
@@ -139,43 +121,25 @@ func (h *BookHandler) GetAllBooks() echo.HandlerFunc {
 	}
 }
 
+// UpdateBook is
 func (h *BookHandler) UpdateBook() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		span, ctx := opentracing.StartSpanFromContext(utils.GetRequestCtx(c), "book.handler.UpdateBook")
+		defer span.Finish()
+
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			response.NewError(c, 400, "Invalid book id")
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		var updateInput models.UpdateInputBook
-
-		if title := c.FormValue("title"); title != "" {
-			updateInput.Title = &title
+		if err := c.Bind(&updateInput); err != nil {
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
-		if year := c.FormValue("year"); year != "" {
-			yearInt, err := strconv.Atoi(year)
-			if err != nil {
-				response.NewError(c, 400, err.Error())
-				return err
-			}
-
-			if yearInt > time.Now().Year() {
-				response.NewError(c, 400, "invalid year")
-				return err
-			}
-
-			updateInput.Year = &yearInt
-		}
-
-		if genre := c.FormValue("genre"); genre != "" {
-			updateInput.Genre = &genre
-		}
-
-		responseData, err := h.service.UpdateBook(c, id, &updateInput)
+		responseData, err := h.service.UpdateBook(ctx, id, &updateInput)
 		if err != nil {
-			response.NewError(c, 500, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		c.JSON(200, echo.Map{
@@ -186,18 +150,20 @@ func (h *BookHandler) UpdateBook() echo.HandlerFunc {
 	}
 }
 
+// DeleteBook is
 func (h *BookHandler) DeleteBook() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		span, ctx := opentracing.StartSpanFromContext(utils.GetRequestCtx(c), "book.handler.DeleteBook")
+		defer span.Finish()
+
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
-			response.NewError(c, 400, "Invalid book id")
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
-		responseData, err := h.service.DeleteBook(c, id)
+		responseData, err := h.service.DeleteBook(ctx, id)
 		if err != nil {
-			response.NewError(c, 500, err.Error())
-			return err
+			return c.JSON(httperr.ErrorResponse(err))
 		}
 
 		c.JSON(200, echo.Map{

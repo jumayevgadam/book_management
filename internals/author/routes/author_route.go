@@ -5,13 +5,12 @@ import (
 	"github.com/jumayevgadam/book_management/internals/author/handler"
 	"github.com/jumayevgadam/book_management/internals/author/repository"
 	"github.com/jumayevgadam/book_management/internals/author/service"
-	"github.com/jumayevgadam/book_management/pkg/logger"
 	"github.com/labstack/echo/v4"
 )
 
-func InitAuthorRoutes(router *echo.Group, DB *pgxpool.Pool, logger logger.Logger) {
-	// These codes implementations of code such a river))
-	AuthorRepos := repository.NewDTORepository(DB, logger)
+func InitAuthorRoutes(router *echo.Group, DB *pgxpool.Pool) {
+	// Data Flowing model -> repo -> service -> handler))
+	AuthorRepos := repository.NewDTORepository(DB)
 	AuthorServices := service.NewDTOService(AuthorRepos)
 	AuthorHandlers := handler.NewDTOHandler(AuthorServices)
 
