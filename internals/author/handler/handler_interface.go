@@ -1,11 +1,13 @@
 package handler
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type IHandler interface {
-	CreateAuthor() echo.HandlerFunc
-	GetAuthorByID() echo.HandlerFunc
-	GetAllAuthors() echo.HandlerFunc
-	UpdateAuthor() echo.HandlerFunc
-	DeleteAuthor() echo.HandlerFunc
+	CreateAuthor() gin.HandlerFunc
+	GetAuthorByID() gin.HandlerFunc
+	GetAllAuthors() gin.HandlerFunc
+	UpdateAuthor() gin.HandlerFunc
+	DeleteAuthor() gin.HandlerFunc
 }

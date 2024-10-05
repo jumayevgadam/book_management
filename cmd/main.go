@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/jumayevgadam/book_management/internals/dbconn"
-	"github.com/labstack/echo/v4"
 
 	"github.com/joho/godotenv"
 	"github.com/jumayevgadam/book_management/internals/author/routes"
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// New Echo
-	app := echo.New()
+	app := gin.Default()
 	api := app.Group("/api")
 
 	// Initialize routes
@@ -31,5 +31,5 @@ func main() {
 	routes2.InitBookRoutes(api, DB)
 
 	// Call server
-	app.Start(":3000")
+	app.Run(":3000")
 }
